@@ -1,0 +1,96 @@
+name: sandbox CI e CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag da imagem Docker'
+        required: true
+        default: 'latest'
+        type: string
+      registry_repository:
+        description: 'Repositorio'
+        required: true
+        default: ''
+        type: choice
+        options:
+            - ubi9
+            - ubi8
+            - rhel8
+            - rhel9
+      image_repository:
+        description: 'Imagem base para ex: nginx-120'
+        required: true
+        default: ''
+
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Autenticar no Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Busca da imagem na Registry Red Hat
+        id: busca_imagem
+        run: |
+          tag_url="${{ github.event.inputs.image_tag }}"
+          registry_repository="${{ github.event.inputs.registry_repository }}"
+          image_repository="${{ github.event.inputs.image_repository }}"
+          img_find=$registry_repository/$image_repository
+          url="https://catalog.redhat.com/api/containers/v1/repositories/registry/${{ vars.REGISTRY_REDHAT }}/repository/$img_find/tag/$tag_url"
+          echo "URL da imagem: $url"
+          response=$(curl -sS "$url")
+          if [ -z "$response" ]; then
+            echo "Erro: A resposta da API está vazia ou a URL é inválida."
+            exit 1
+          fi
+
+          tag_latest=$(curl -sS $url | jq -r '.data[0].repositories[1].tags[-1].name')
+          if [ -z "$tag_latest" ]; then
+            echo "Erro: Nenhuma tag válida foi encontrada na resposta da API."
+            exit 1
+          fi
+
+          echo "tag_url=$tag_url" >> "$GITHUB_OUTPUT"
+          echo "img_find=$img_find" >> "$GITHUB_OUTPUT"
+          echo "tag_latest=$tag_latest" >> "$GITHUB_OUTPUT"     
+
+
+      - name: Autenticar Registry Azure
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ vars.REGISTRY_AZURE }}
+          username: ${{ secrets.DOCKERIO_USERNAME }}
+          password: ${{ secrets.DOCKERIO_PASSWORD }}
+      
+      - name: Autenticar Registry Redhat.io 
+        id: registry_redhat_io
+        if: ${{ github.event.inputs.registry_repository == 'rhel8' || github.event.inputs.registry_repository == 'rhel9' }}
+        run: |
+          tag_latest="${{ steps.busca_imagem.outputs.tag_latest }}"
+          img_find="${{ steps.busca_imagem.outputs.img_find }}"
+          repo="${{ github.event.inputs.registry_repository }}"
+          
+          echo "${{ secrets.REDHAT_IO_PASSWORD }}" | docker login "${{ vars.REGISTRY_IO }}" -u "${{ secrets.REDHAT_IO_USERNAME }}" --password-stdin
+          docker pull ${{ vars.REGISTRY_REDHAT_IO }}/${{ steps.busca_imagem.outputs.img_find }}:${{ steps.busca_imagem.outputs.tag_latest }} 
+          docker tag ${{ vars.REGISTRY_REDHAT_IO }}/$img_find:$tag_latest registryimage.azurecr.io/$img_find:$tag_latest
+          docker push registryimage.azurecr.io/$img_find:$tag_latest
+  
+      - name: Enviando imagem Azure registry
+        if: ${{ github.event.inputs.registry_repository == 'ubi9' || github.event.inputs.registry_repository == 'ubi8' }}
+        run: |
+          tag_latest="${{ steps.busca_imagem.outputs.tag_latest }}"
+          img_find="${{ steps.busca_imagem.outputs.img_find }}"
+          registry_repository="${{ github.event.inputs.registry_repository }}"
+          image_tag="${{ github.event.inputs.image_tag }}"
+          
+          docker pull ${{ vars.REGISTRY_REDHAT }}/$img_find:$tag_latest          
+          docker tag ${{ vars.REGISTRY_REDHAT }}/$img_find:$tag_latest registryimage.azurecr.io/$img_find:$tag_latest
+          docker push registryimage.azurecr.io/$img_find:$tag_latest
+  
