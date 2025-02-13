@@ -78,8 +78,9 @@ jobs:
           repo="${{ github.event.inputs.registry_repository }}"
           
           echo "${{ secrets.REDHAT_IO_PASSWORD }}" | docker login "${{ vars.REGISTRY_IO }}" -u "${{ secrets.REDHAT_IO_USERNAME }}" --password-stdin
-          docker pull ${{ vars.REGISTRY_REDHAT_IO }}/${{ steps.busca_imagem.outputs.img_find }}:${{ steps.busca_imagem.outputs.tag_latest }} 
-          docker tag ${{ vars.REGISTRY_REDHAT_IO }}/$img_find:$tag_latest registryimage.azurecr.io/$img_find:$tag_latest
+          docker pull ${{ vars.REGISTRY_IO }}/$img_find:$tag_latest
+          #docker pull ${{ vars.REGISTRY_IO }}/${{ steps.busca_imagem.outputs.img_find }}:${{ steps.busca_imagem.outputs.tag_latest }} 
+          docker tag ${{ vars.REGISTRY_IO }}/$img_find:$tag_latest registryimage.azurecr.io/$img_find:$tag_latest
           docker push registryimage.azurecr.io/$img_find:$tag_latest
   
       - name: Enviando imagem Azure registry
