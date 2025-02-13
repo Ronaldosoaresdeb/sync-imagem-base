@@ -1,6 +1,34 @@
 # Sandbox CI/CD Workflow
 
-Este repositório contém um workflow do GitHub Actions para realizar o build e push de imagens Docker em diferentes registries (Red Hat e Azure). O processo pode ser acionado manualmente via `workflow_dispatch`, com opções configuráveis para determinar a imagem e repositório de destino.
+Este repositório contém um workflow do GitHub Actions para realizar o build e push de imagens Docker em diferentes registries Red Hat. O processo pode ser acionado manualmente via `workflow_dispatch`, com opções configuráveis para determinar a imagem e repositório de destino.
+
+![alt text](image.png)
+
+Para que o Workflow tenha acesso a repositorios autenticado na Red Hat precisa criar uma conta segue o link abaixo
+
+[Regitro de Conta Red Hat](https://access.redhat.com/terms-based-registry/accounts)
+
+## Variáveis de repositorio
+`REGISTRY_AZURE=registryimage.azurecr.io`
+`REGISTRY_IO=registry.redhat.io`
+`REGISTRY_REDHAT=registry.access.redhat.com`
+
+## Repository secrets
+`DOCKERIO_PASSWORD`
+`DOCKERIO_USERNAME`
+`REDHAT_IO_PASSWORD`
+`REDHAT_IO_USERNAME`
+
+`AZURE_CREDENTIALS`
+```yaml
+{
+  "clientId": "SEU_CLIENT_ID",
+  "clientSecret": "SEU_CLIENT_SECRET",
+  "subscriptionId": "SEU_SUBSCRIPTION_ID",
+  "tenantId": "SEU_TENANT_ID"
+}
+
+```
 
 ## Variáveis de Entrada
 
@@ -90,17 +118,9 @@ Se o `registry_repository` for `ubi8` ou `ubi9`, a imagem é enviada para o Azur
 
 ## Diagrama do Fluxo
 
-```mermaid
-graph TD;
-    A[Início] -->|Workflow Dispatch| B[Checkout do Código];
-    B --> C[Autenticar no Azure];
-    C --> D[Buscar Imagem na Red Hat];
-    D --> E{Registry Repository};
-    E -->|rhel8/rhel9| F[Autenticar na Red Hat e Enviar para Azure];
-    E -->|ubi8/ubi9| G[Enviar Imagem para Azure];
-    F & G --> H[Fim]
-```
+
 
 ## Conclusão
 
 Este workflow automatiza o processo de obtenção e envio de imagens Docker da Red Hat para o Azure Container Registry, garantindo flexibilidade na escolha da imagem e do repositório de destino. Caso precise de mais ajustes ou melhorias, sinta-se à vontade para contribuir!
+
