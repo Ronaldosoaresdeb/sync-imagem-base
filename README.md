@@ -7,7 +7,7 @@ Este repositório contém um workflow do GitHub Actions para realizar o build e 
 O workflow é acionado manualmente e requer os seguintes inputs:
 
 - **`image_tag`**: Tag da imagem Docker a ser utilizada (default: `latest`).
-- **`registry_repository`**: Repositório de destino da imagem. Pode ser:
+- **`registry_repository`**: Repositório de Origem da imagem. Pode ser:
   - `ubi9`
   - `ubi8`
   - `rhel8`
