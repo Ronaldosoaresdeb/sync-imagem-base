@@ -61,7 +61,6 @@ jobs:
           echo "img_find=$img_find" >> "$GITHUB_OUTPUT"
           echo "tag_latest=$tag_latest" >> "$GITHUB_OUTPUT"     
 
-
       - name: Autenticar Registry Azure
         uses: azure/docker-login@v2
         with:
@@ -94,4 +93,3 @@ jobs:
           docker pull ${{ vars.REGISTRY_REDHAT }}/$img_find:$tag_latest          
           docker tag ${{ vars.REGISTRY_REDHAT }}/$img_find:$tag_latest registryimage.azurecr.io/$img_find:$tag_latest
           docker push registryimage.azurecr.io/$img_find:$tag_latest
-  
